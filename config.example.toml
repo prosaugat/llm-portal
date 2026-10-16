@@ -1,0 +1,81 @@
+# LLM Portal — configuration
+# Copy this file to config.toml and adjust for your environment.
+# Environment variables override these values (see docs/CONFIGURATION.md).
+
+[portal]
+# Web portal bind address
+host = "127.0.0.1"
+port = 8081
+# Session lifetime in hours
+session_hours = 12
+# Allow self-registration (users can sign up without an invite)
+open_signup = true
+
+[branding]
+# Portal name shown in the header, login, and signup pages
+name = "LLM Portal"
+# Primary brand color (used for buttons, links, accents)
+primary_color = "#0066ff"
+# Accent/secondary color (used for gradients and highlights)
+accent_color = "#FF9900"
+# Dark blue used in background gradients
+dark_color = "#15275D"
+
+[backend]
+# Type of AI inference backend: "llamacpp" | "ollama" | "openai"
+#   llamacpp — llama-server with native API-key auth (AUTH=on)
+#   ollama   — Ollama server (no native auth; proxy enforces keys)
+#   openai   — any OpenAI-compatible server (vLLM, TGI, LiteLLM, etc.)
+type = "llamacpp"
+# Base URL of the backend API (what the proxy forwards to)
+url = "http://127.0.0.1:8090"
+# Public API domain shown in the dashboard and OpenCode config
+api_domain = "localhost:8080"
+# Provider name used in OpenCode config generation
+provider_name = "myllm"
+# Default model display name (shown on the dashboard)
+model = "default"
+# Model alias for display
+model_alias = "default"
+# Context window per slot
+ctx_per_slot = 4096
+# Number of concurrent slots
+slots = 1
+
+[proxy]
+# Enable the logging reverse proxy (recommended)
+enabled = true
+# Bind address for the proxy
+host = "0.0.0.0"
+port = 8080
+# Enforce API-key auth at the proxy level.
+#   true  — reject requests without a valid key (use for ollama/openai backends)
+#   false — let the backend handle auth (use for llamacpp with AUTH=on)
+enforce_auth = false
+
+[paths]
+# Base directory for data, logs, and keys (relative paths resolve from here)
+data_dir = "./data"
+log_dir = "./logs"
+# API keys file (llama-server auth source, also used by the proxy)
+keys_file = "./data/api_keys.txt"
+# SQLite database for portal accounts
+db_file = "./data/portal.db"
+# Path to the user-management CLI script
+userctl = "./userctl.sh"
+
+[security]
+# PBKDF2-SHA256 iterations for password hashing
+pbkdf2_iterations = 200000
+# Session cookie name
+session_cookie = "llmportal"
+# Login rate limiting: max attempts per window
+rate_limit_attempts = 8
+# Rate-limit window in minutes
+rate_limit_window_minutes = 10
+
+[logging]
+# Days to retain logs before rotation prunes them
+retention_days = 7
+# Log rotation time (cron format for systemd timer)
+rotate_time = "00:05:00"

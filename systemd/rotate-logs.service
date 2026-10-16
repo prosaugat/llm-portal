@@ -1,0 +1,6 @@
+[Unit]
+Description=Daily log rotation for LLM Portal logs
+
+[Service]
+Type=oneshot
+ExecStart=__INSTALL_DIR__/scripts/rotate-logs.sh

@@ -1,0 +1,16 @@
+[Unit]
+Description=LLM Portal web application (signup, API keys, user management)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__INSTALL_DIR__
+Environment=LLM_PORTAL_CONFIG=__INSTALL_DIR__/config.toml
+ExecStart=/usr/bin/python3 -m llm_portal.app
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
