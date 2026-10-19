@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [1.2.0] — 2026-10-19
+
+### Added
+- **Rate limiting** — sliding-window requests-per-minute limit per API key (default 60 RPM). Exceeding it returns `429` with `Retry-After` header and OpenAI-compatible JSON error. Configure via `proxy.rate_limit_rpm`.
+- **Concurrency caps** — max simultaneous in-flight requests per API key (default 5). Prevents a single key from monopolizing backend capacity. Returns `429` when exceeded. Configure via `proxy.rate_limit_concurrency`.
+- **Token accounting** — `usage` block parsed from response bodies (JSON + SSE streaming), logged as `tokens=<n>` in access log. Displayed on dashboard and account page.
+- **Token daily quota** — optional per-key daily token budget (default 0 = unlimited). Returns `429` when exceeded. Configure via `proxy.token_daily_quota`.
+- **Portal user attribution** — portal requests now log the authenticated username (via `tkuser` cookie) instead of `anon`.
+- Token usage display on dashboard ("tokens processed 24h") and account page (4th stat card).
+
+### Changed
+- Access log format appends `tokens=<n>` when usage is parseable (backward-compatible: existing parsers unaffected)
+- `_reply()` supports extra response headers (needed for `Retry-After`)
+
 ## [1.1.0] — 2026-10-19
 
 ### Added

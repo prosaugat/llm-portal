@@ -50,10 +50,19 @@ host = "0.0.0.0"
 port = 8080
 # Enforce API-key auth at the proxy level.
 #   true  — proxy validates keys; NEW KEYS WORK INSTANTLY (no backend restart).
-#           Recommended for all backends. The proxy re-reads the key file
+#           Recommended for all backends. The proxy re--reads the key file
 #           the moment it changes (mtime detection).
 #   false — let the backend handle auth (requires backend restart on key change)
 enforce_auth = true
+
+# --- Rate limiting + quotas (per authenticated key, /v1/* only) ---
+# Max requests per minute per API key (0 = unlimited). Returns 429 + Retry-After.
+rate_limit_rpm = 60
+# Max simultaneous in-flight requests per API key (0 = unlimited). Returns 429.
+rate_limit_concurrency = 5
+# Max tokens per day per API key (0 = unlimited). Parsed from response usage.
+# Returns 429 when exceeded. Resets daily (in-memory).
+token_daily_quota = 0
 
 [paths]
 # Base directory for data, logs, and keys (relative paths resolve from here)

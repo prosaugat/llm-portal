@@ -401,6 +401,6 @@ All endpoints (except `/health` on some backends) require `Authorization: Bearer
 | `401` | Missing, invalid, or revoked API key |
 | `404` | Unknown endpoint or model |
 | `415` | Missing `Content-Type: application/json` |
-| `429` | Rate limited (if backend enforces it) |
+| `429` | Rate limit, concurrency cap, or token quota exceeded (see `Retry-After` header) |
 | `502` | Backend not responding |
 | `504` | Backend timeout |

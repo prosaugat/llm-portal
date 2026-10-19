@@ -341,10 +341,17 @@ def own_activity(username, n=20):
     hits = [l for l in tail_file(ACCESSLOG, 512 * 1024) if needle in l]
     out = []
     for l in hits[-n:][::-1]:
-        p = l.split("\t")
+        p = l.rstrip("\n").split("\t")
         if len(p) >= 8:
-            out.append({"ts": p[0], "type": p[2], "ip": p[3], "req": p[4],
-                        "status": p[5], "bytes": p[6], "dur": p[7]})
+            entry = {"ts": p[0], "type": p[2], "ip": p[3], "req": p[4],
+                     "status": p[5], "bytes": p[6], "dur": p[7], "tokens": 0}
+            for field in p[8:]:
+                if field.startswith("tokens="):
+                    try:
+                        entry["tokens"] = int(field.split("=", 1)[1])
+                    except ValueError:
+                        pass
+            out.append(entry)
     return out
 
 
@@ -1203,6 +1210,7 @@ role <span class="badge {{ROLECLASS}}">{{ROLE}}</span></p>
       <div class="skeleton skeleton-card" style="height:80px"></div>
     </div>
     <div style="display:flex;gap:16px;margin-top:8px;font-size:12px" id="usageLegend"></div>
+    <div class="muted" style="font-size:12px;margin-top:6px" id="tokenLine"></div>
   </div>
 </div>
 
@@ -1335,6 +1343,9 @@ async function loadUsage(){
   document.getElementById("usageLegend").innerHTML =
     '<span><span style="display:inline-block;width:10px;height:10px;background:var(--acc);border-radius:2px"></span> OK: ' + ok + '</span>'
     + '<span><span style="display:inline-block;width:10px;height:10px;background:var(--err);border-radius:2px"></span> Errors: ' + err + '</span>';
+  const tok = r.body.tokens || 0;
+  const tokEl = document.getElementById("tokenLine");
+  if(tokEl) tokEl.textContent = tok > 0 ? "\u26A1 " + tok.toLocaleString() + " tokens processed (24h)" : "";
 }
 loadUsage();
 setInterval(loadUsage, 30000);
@@ -1411,10 +1422,11 @@ def account_page(u, created):
   <!-- Usage Summary -->
   <div class="card" style="text-align:left;margin-bottom:16px">
     <h2><span class="icon">&#x1F4C8;</span> Usage summary</h2>
-    <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stats" style="grid-template-columns:repeat(4,1fr)">
       <div class="stat"><div class="val" id="acTotal">—</div><div class="lbl">Calls (24h)</div></div>
       <div class="stat"><div class="val" id="acOk">—</div><div class="lbl">Successful</div></div>
       <div class="stat"><div class="val" id="acErr">—</div><div class="lbl">Errors</div></div>
+      <div class="stat"><div class="val" id="acTokens">—</div><div class="lbl">Tokens (24h)</div></div>
     </div>
     <div class="usage-chart" id="acUsageChart" style="margin-top:10px">
       <div class="skeleton skeleton-card" style="height:60px"></div>
@@ -1498,6 +1510,8 @@ async function loadAcUsage(){
   document.getElementById("acTotal").textContent = total;
   document.getElementById("acOk").textContent = ok;
   document.getElementById("acErr").textContent = err;
+  const tokEl = document.getElementById("acTokens");
+  if(tokEl) tokEl.textContent = (r.body.tokens || 0).toLocaleString();
   const max = Math.max(1, ...hours.map(h => h.n));
   const W = 400, H = 60, pad = 2;
   const bw = (W - pad * hours.length) / hours.length;
@@ -2163,14 +2177,21 @@ class Handler(BaseHTTPRequestHandler):
                          "script-src 'unsafe-inline'; img-src 'self' data:; "
                          "form-action 'self'")
 
+    def _send_extra(self, extra):
+        for k, v in (extra or {}).items():
+            if isinstance(v, list):
+                for item in v:
+                    self.send_header(k, item)
+            else:
+                self.send_header(k, v)
+
     def _json(self, obj, code=200, extra=None):
         raw = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self._sec()
-        for k, v in (extra or {}).items():
-            self.send_header(k, v)
+        self._send_extra(extra)
         self.end_headers()
         self.wfile.write(raw)
 
@@ -2181,8 +2202,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
         self._sec()
-        for k, v in (extra or {}).items():
-            self.send_header(k, v)
+        self._send_extra(extra)
         self.end_headers()
         self.wfile.write(raw)
 
@@ -2191,8 +2211,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Location", loc)
         self.send_header("Content-Length", "0")
         self._sec()
-        for k, v in (extra or {}).items():
-            self.send_header(k, v)
+        self._send_extra(extra)
         self.end_headers()
 
     def _body(self):
@@ -2292,6 +2311,7 @@ class Handler(BaseHTTPRequestHandler):
                 hourly = _dd(int)
                 status_codes = _dd(int)
                 total = 0
+                total_tokens = 0
                 now = time.time()
                 cutoff = now - 86400
                 username = s["username"]
@@ -2300,7 +2320,7 @@ class Handler(BaseHTTPRequestHandler):
                     for line in tail_file(ACCESSLOG, 2 * 1024 * 1024):
                         if needle not in line:
                             continue
-                        parts = line.split("\t")
+                        parts = line.rstrip("\n").split("\t")
                         if len(parts) < 6:
                             continue
                         ts_str = parts[0].strip()
@@ -2316,6 +2336,12 @@ class Handler(BaseHTTPRequestHandler):
                         sc = parts[5].strip()
                         if sc.isdigit():
                             status_codes[sc] += 1
+                        for field in parts[8:]:
+                            if field.startswith("tokens="):
+                                try:
+                                    total_tokens += int(field.split("=", 1)[1])
+                                except ValueError:
+                                    pass
                 except Exception:
                     pass
                 hours = []
@@ -2323,7 +2349,9 @@ class Handler(BaseHTTPRequestHandler):
                     t = now - i * 3600
                     key = time.strftime("%Y-%m-%dT%H", time.localtime(t))
                     hours.append({"h": time.strftime("%H:00", time.localtime(t)), "n": hourly.get(key, 0)})
-                self._json({"hours": hours, "total": total, "statuses": dict(status_codes)})
+                self._json({"hours": hours, "total": total,
+                            "statuses": dict(status_codes),
+                            "tokens": total_tokens})
         elif p == "/portal/api/my-sessions":
             s = self._need_auth(csrf=False)
             if s:
@@ -2513,8 +2541,9 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/portal/api/logout":
             q("DELETE FROM sessions WHERE token_hash=?", (s["token_hash"],))
             audit(s["username"], "logout", ip)
-            self._json({"ok": True}, extra={"Set-Cookie":
-                        f"{COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"})
+            self._json({"ok": True}, extra={"Set-Cookie": [
+                        f"{COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax",
+                        f"tkuser=; Path=/; Max-Age=0; SameSite=Lax"]})
             return
         if p == "/portal/api/password":
             return self.api_password(body, s, ip)
@@ -2580,9 +2609,11 @@ class Handler(BaseHTTPRequestHandler):
         token, _ = create_session(row["id"])
         purge_expired_sessions()
         audit(un, "login", ip, "ok")
-        self._json({"ok": True, "role": row["role"]}, extra={"Set-Cookie":
+        self._json({"ok": True, "role": row["role"]}, extra={"Set-Cookie": [
                     f"{COOKIE}={token}; Path=/; Max-Age={SESSION_SECS}; "
-                    f"HttpOnly; SameSite=Lax"})
+                    f"HttpOnly; SameSite=Lax",
+                    f"tkuser={un}; Path=/; Max-Age={SESSION_SECS}; "
+                    f"SameSite=Lax"]})
 
     def api_signup(self, body, ip):
         un = str(body.get("username", "")).strip().lower()

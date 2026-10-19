@@ -6,14 +6,25 @@ server, routing /portal/* to the auth portal instead.
 
 Logs:
   logs/access/access.log   one line per request with user attribution
-  logs/error/error.log     HTTP 4xx/5xx, auth failures, proxy errors
+                           (includes tokens=<n> when usage is parseable)
+  logs/error/error.log     HTTP 4xx/5xx, auth failures, proxy errors,
+                           rate-limit / quota / concurrency rejections
   logs/events/events.log   startup / shutdown / upstream-down notifications
 
 User attribution: the Bearer token in each request (Authorization header)
-is mapped to the username via the keys file (re-read every 30 s).
+is mapped to the username via the keys file (re-read on mtime change +
+30 s TTL). For /portal/* requests the tkuser cookie set by the portal is
+used so portal traffic is attributed to the logged-in user.
 
 For Ollama and other backends without native auth, set proxy.enforce_auth
 = true in config.toml to reject requests without a valid API key.
+
+Rate limiting + quotas (per authenticated key, /v1/* only):
+  proxy.rate_limit_rpm         max requests/min per key  (default 60,  0 = off)
+  proxy.rate_limit_concurrency max simultaneous streams  (default 5,   0 = off)
+  proxy.token_daily_quota      max tokens/day per key    (default 0  = off)
+  Exceeding any limit returns 429 + Retry-After (OpenAI-compatible JSON).
+  Token usage is parsed from response bodies (JSON + SSE) and logged.
 
 No third-party deps: pure Python asyncio + stdlib.
 """
@@ -24,7 +35,8 @@ import os
 import re
 import socket
 import time
-from datetime import datetime
+from collections import deque
+from datetime import datetime, date
 
 # ---------------------------------------------------------------- config
 try:
@@ -44,6 +56,10 @@ PORTAL_UP  = os.environ.get("PORTAL_UPSTREAM", f"127.0.0.1:{_cfg.get('portal', '
 LOG_DIR    = _cfg.get("paths", "log_dir", "./logs")
 KEY_FILE   = _cfg.get("paths", "keys_file", "./data/api_keys.txt")
 ENFORCE_AUTH = _cfg.get("proxy", "enforce_auth", False)
+# --- rate limits / quotas (per authenticated user, /v1/* only) ---
+RATE_LIMIT_RPM = int(_cfg.get("proxy", "rate_limit_rpm", 60))            # 0 = unlimited
+RATE_LIMIT_CONCURRENCY = int(_cfg.get("proxy", "rate_limit_concurrency", 5))  # 0 = unlimited
+TOKEN_DAILY_QUOTA = int(_cfg.get("proxy", "token_daily_quota", 0))       # 0 = unlimited
 
 BLOCK = 65536
 REQ_RE = re.compile(r"^([A-Z]+) (\S+) HTTP/1\.[01]$")
@@ -71,10 +87,11 @@ def _append(kind, text):
         pass  # never let logging kill the proxy
 
 
-def log_access(user, req, status, nbytes, dur_ms, ua, ip, req_type):
+def log_access(user, req, status, nbytes, dur_ms, ua, ip, req_type, tokens=0):
     ts = datetime.now().isoformat(timespec="seconds")
+    tok = f"\ttokens={tokens}" if tokens else ""
     _append("access",
-            f"{ts}\tuser={user}\ttype={req_type}\tip={ip}\t{req}\t{status}\t{nbytes}B\t{dur_ms}ms\tua={ua!r}\n")
+            f"{ts}\tuser={user}\ttype={req_type}\tip={ip}\t{req}\t{status}\t{nbytes}B\t{dur_ms}ms\tua={ua!r}{tok}\n")
 
 
 def log_error(user, req, msg, status=""):
@@ -160,13 +177,117 @@ def check_auth(auth_header, path):
     return False, "unknown:" + token[:18] + ".."
 
 
+# ------------------------------------------------------- rate limit / quota
+_rate_windows = {}       # user -> deque of request timestamps (sliding 60 s)
+_concurrency = {}        # user -> in-flight request count
+_token_daily = {}        # user -> {"date": date_str, "tokens": int}
+
+
+def check_rate_limit(user, path):
+    """Sliding-window RPM check for /v1/* only. Returns (allowed, retry_after)."""
+    if RATE_LIMIT_RPM <= 0 or not path.startswith("/v1/"):
+        return True, 0
+    now = time.time()
+    win = _rate_windows.get(user)
+    if win is None:
+        win = _rate_windows[user] = deque()
+    cutoff = now - 60
+    while win and win[0] < cutoff:
+        win.popleft()
+    if len(win) >= RATE_LIMIT_RPM:
+        retry_after = max(1, int(win[0] + 60 - now) + 1)
+        return False, retry_after
+    win.append(now)
+    return True, 0
+
+
+def acquire_slot(user, path):
+    """Reserve a concurrency slot for /v1/*. Returns True if acquired (or unlimited)."""
+    if RATE_LIMIT_CONCURRENCY <= 0 or not path.startswith("/v1/"):
+        return True
+    cur = _concurrency.get(user, 0)
+    if cur >= RATE_LIMIT_CONCURRENCY:
+        return False
+    _concurrency[user] = cur + 1
+    return True
+
+
+def release_slot(user, path):
+    if RATE_LIMIT_CONCURRENCY <= 0 or not path.startswith("/v1/"):
+        return
+    cur = _concurrency.get(user, 0)
+    if cur > 0:
+        _concurrency[user] = cur - 1
+
+
+def check_token_quota(user):
+    """Returns (allowed, used_today, quota). Resets daily."""
+    if TOKEN_DAILY_QUOTA <= 0:
+        return True, 0, 0
+    today = date.today().isoformat()
+    entry = _token_daily.get(user)
+    if not entry or entry["date"] != today:
+        entry = _token_daily[user] = {"date": today, "tokens": 0}
+    if entry["tokens"] >= TOKEN_DAILY_QUOTA:
+        return False, entry["tokens"], TOKEN_DAILY_QUOTA
+    return True, entry["tokens"], TOKEN_DAILY_QUOTA
+
+
+def add_tokens(user, n):
+    if n <= 0:
+        return
+    today = date.today().isoformat()
+    entry = _token_daily.get(user)
+    if not entry or entry["date"] != today:
+        entry = _token_daily[user] = {"date": today, "tokens": 0}
+    entry["tokens"] += n
+
+
+def get_token_usage(user):
+    """Return (tokens_today, quota, pct) for a user."""
+    today = date.today().isoformat()
+    entry = _token_daily.get(user)
+    used = entry["tokens"] if entry and entry["date"] == today else 0
+    pct = int(used * 100 / TOKEN_DAILY_QUOTA) if TOKEN_DAILY_QUOTA > 0 else 0
+    return used, TOKEN_DAILY_QUOTA, pct
+
+
+# ------------------------------------------------------ portal attribution
+def resolve_portal_user(headers):
+    """Extract username from tkuser cookie set by the portal (fixes user=anon)."""
+    cookie = headers.get("cookie", "")
+    for part in cookie.split(";"):
+        k, _, v = part.strip().partition("=")
+        if k == "tkuser" and v:
+            return v
+    return "anon"
+
+
+# ---------------------------------------------------------- token extraction
+_USAGE_PT_RE = re.compile(rb'"prompt_tokens":\s*(\d+)')
+_USAGE_CT_RE = re.compile(rb'"completion_tokens":\s*(\d+)')
+
+
+def extract_usage(data):
+    """Extract (prompt_tokens, completion_tokens) from a response body / SSE chunk."""
+    idx = data.find(b'"usage"')
+    if idx < 0:
+        return 0, 0
+    window = data[idx:idx + 512]
+    pt_m = _USAGE_PT_RE.search(window)
+    ct_m = _USAGE_CT_RE.search(window)
+    pt = int(pt_m.group(1)) if pt_m else 0
+    ct = int(ct_m.group(1)) if ct_m else 0
+    return pt, ct
+
+
 # ---------------------------------------------------------------- relay
 async def _read_with_timeout(reader, timeout=900):
     return await asyncio.wait_for(reader.read(BLOCK), timeout)
 
 
-async def relay_chunked(src, dst):
-    """Relay a chunked body verbatim; returns bytes relayed.
+async def relay_chunked(src, dst, capture_usage=False):
+    """Relay a chunked body verbatim; returns bytes relayed (or (bytes, usage_buf)).
 
     Uses readexactly() for chunk payloads: a plain read() can return bytes
     BEYOND the current chunk (they belong to the next chunk's framing) and
@@ -174,6 +295,7 @@ async def relay_chunked(src, dst):
     mid-generation (web-UI: "Stream resume produced no new bytes").
     """
     total = 0
+    usage_buf = b""
     while True:
         size_line = await src.readline()
         if not size_line:
@@ -189,6 +311,8 @@ async def relay_chunked(src, dst):
                 t = await src.readline()
                 dst.write(t)
                 await dst.drain()
+                if capture_usage:
+                    usage_buf += t
                 if t in (b"\r\n", b"\n", b""):
                     break
             break
@@ -199,12 +323,21 @@ async def relay_chunked(src, dst):
             if e.partial:
                 dst.write(e.partial)
                 await dst.drain()
+                if capture_usage:
+                    usage_buf += e.partial
             break
         except asyncio.TimeoutError:
             break
         dst.write(data + crlf)
         await dst.drain()
         total += size
+        if capture_usage:
+            usage_buf += data
+            # keep buffer bounded: usage arrives at end of stream
+            if len(usage_buf) > 65536:
+                usage_buf = usage_buf[-16384:]
+    if capture_usage:
+        return total, usage_buf
     return total
 
 
@@ -214,6 +347,8 @@ async def handle_client(client_r, client_w):
     t0 = time.time()
     user, req, status, nbytes = "anon", "-", 0, 0
     ua, req_type = "", ""
+    slot_held = False
+    resp_tokens = 0
     try:
         client_r.sock = None
         # --- read request head ---
@@ -252,6 +387,51 @@ async def handle_client(client_r, client_w):
                                         "code": "invalid_api_key"}}).encode()
             await _reply(client_w, 401, err, content_type="application/json")
             return
+        # --- portal attribution from tkuser cookie (fixes user=anon) ---
+        if is_portal and user == "anon":
+            user = resolve_portal_user(headers)
+        # --- rate limit (RPM) → 429 ---
+        rl_ok, retry_after = check_rate_limit(user, path)
+        if not rl_ok:
+            status = 429
+            dur_ms = int((time.time() - t0) * 1000)
+            log_access(user, f"{method} {path}", 429, 0, dur_ms, ua, ip, "api")
+            log_error(user, f"{method} {path}",
+                      f"rate limit exceeded ({RATE_LIMIT_RPM}/min)", 429)
+            err = json.dumps({"error": {
+                "message": f"Rate limit exceeded: {RATE_LIMIT_RPM} requests/min. Retry in {retry_after}s.",
+                "type": "rate_limit_error", "code": "rate_limit_exceeded"}}).encode()
+            await _reply(client_w, 429, err, content_type="application/json",
+                         extra={"Retry-After": str(retry_after)})
+            return
+        # --- token daily quota → 429 ---
+        tq_ok, used_today, quota = check_token_quota(user)
+        if not tq_ok:
+            status = 429
+            dur_ms = int((time.time() - t0) * 1000)
+            log_access(user, f"{method} {path}", 429, 0, dur_ms, ua, ip, "api")
+            log_error(user, f"{method} {path}",
+                      f"token daily quota exceeded ({used_today}/{quota})", 429)
+            err = json.dumps({"error": {
+                "message": f"Daily token quota exceeded: {used_today}/{quota} tokens used today.",
+                "type": "rate_limit_error", "code": "token_quota_exceeded"}}).encode()
+            await _reply(client_w, 429, err, content_type="application/json",
+                         extra={"Retry-After": "3600"})
+            return
+        # --- concurrency cap ---
+        if not acquire_slot(user, path):
+            status = 429
+            dur_ms = int((time.time() - t0) * 1000)
+            log_access(user, f"{method} {path}", 429, 0, dur_ms, ua, ip, "api")
+            log_error(user, f"{method} {path}",
+                      f"concurrency limit reached ({RATE_LIMIT_CONCURRENCY} streams)", 429)
+            err = json.dumps({"error": {
+                "message": f"Concurrency limit: max {RATE_LIMIT_CONCURRENCY} simultaneous requests per key.",
+                "type": "rate_limit_error", "code": "concurrency_limit_exceeded"}}).encode()
+            await _reply(client_w, 429, err, content_type="application/json",
+                         extra={"Retry-After": "5"})
+            return
+        slot_held = True
         if is_portal:
             req_type, target = "portal", PORTAL_UP
         elif path == "/health":
@@ -311,19 +491,22 @@ async def handle_client(client_r, client_w):
             client_w.write(b"\r\n")
             await client_w.drain()
             # --- relay body ---
+            usage_buf = b""
             if chunked:
-                nbytes = await relay_chunked(up_r, client_w)
+                nbytes, usage_buf = await relay_chunked(up_r, client_w, capture_usage=True)
             elif rclen:
                 try:
                     data = await asyncio.wait_for(up_r.readexactly(rclen), 900)
                     client_w.write(data)
                     await client_w.drain()
                     nbytes = rclen
+                    usage_buf = data
                 except asyncio.IncompleteReadError as e:
                     if e.partial:
                         client_w.write(e.partial)
                         await client_w.drain()
                     nbytes = len(e.partial)
+                    usage_buf = e.partial or b""
                 except asyncio.TimeoutError:
                     nbytes = 0
             else:
@@ -334,10 +517,17 @@ async def handle_client(client_r, client_w):
                     client_w.write(data)
                     await client_w.drain()
                     nbytes += len(data)
+                    usage_buf += data
             await client_w.drain()
+            # --- token accounting ---
+            if usage_buf:
+                pt, ct = extract_usage(usage_buf)
+                resp_tokens = pt + ct
+                if resp_tokens:
+                    add_tokens(user, resp_tokens)
             # --- log ---
             dur_ms = int((time.time() - t0) * 1000)
-            log_access(user, req, status, nbytes, dur_ms, ua, ip, req_type)
+            log_access(user, req, status, nbytes, dur_ms, ua, ip, req_type, resp_tokens)
             if status >= 400:
                 log_error(user, req, f"upstream returned {status}", status)
         finally:
@@ -362,6 +552,8 @@ async def handle_client(client_r, client_w):
         except Exception:
             pass
     finally:
+        if slot_held:
+            release_slot(user, path)
         try:
             client_w.close()
             await client_w.wait_closed()
@@ -369,16 +561,20 @@ async def handle_client(client_r, client_w):
             pass
 
 
-async def _reply(writer, code, body, content_type="text/plain"):
+async def _reply(writer, code, body, content_type="text/plain", extra=None):
     reason = {200: "OK", 400: "Bad Request", 401: "Unauthorized",
-              502: "Bad Gateway", 504: "Gateway Timeout"}.get(code, "Error")
-    writer.write(f"HTTP/1.1 {code} {reason}\r\nContent-Length: {len(body)}\r\n"
-                 f"Connection: close\r\nContent-Type: {content_type}\r\n\r\n".encode("latin1") + body)
+              429: "Too Many Requests", 502: "Bad Gateway",
+              504: "Gateway Timeout"}.get(code, "Error")
+    hdrs = f"HTTP/1.1 {code} {reason}\r\nContent-Length: {len(body)}\r\nConnection: close\r\nContent-Type: {content_type}\r\n"
+    for k, v in (extra or {}).items():
+        hdrs += f"{k}: {v}\r\n"
+    hdrs += "\r\n"
+    writer.write(hdrs.encode("latin1") + body)
     await writer.drain()
 
 
 async def main():
-    log_event(f"logging proxy starting: listen {PROXY_HOST}:{PROXY_PORT} upstream {UPSTREAM} portal {PORTAL_UP} keyfile {KEY_FILE}")
+    log_event(f"logging proxy starting: listen {PROXY_HOST}:{PROXY_PORT} upstream {UPSTREAM} portal {PORTAL_UP} keyfile {KEY_FILE} rate_limit={RATE_LIMIT_RPM}/min concurrency={RATE_LIMIT_CONCURRENCY} token_quota={TOKEN_DAILY_QUOTA}")
     server = await asyncio.start_server(handle_client, PROXY_HOST, PROXY_PORT)
     async with server:
         await server.serve_forever()

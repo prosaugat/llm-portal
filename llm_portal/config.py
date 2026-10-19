@@ -45,6 +45,9 @@ DEFAULTS: dict[str, Any] = {
         "host": "0.0.0.0",
         "port": 8080,
         "enforce_auth": True,
+        "rate_limit_rpm": 60,
+        "rate_limit_concurrency": 5,
+        "token_daily_quota": 0,
     },
     "paths": {
         "data_dir": "./data",
@@ -85,6 +88,9 @@ _ENV_MAP: dict[str, tuple[str, str, type]] = {
     "PROXY_HOST":          ("proxy", "host", str),
     "PROXY_PORT":          ("proxy", "port", int),
     "PROXY_ENFORCE_AUTH":  ("proxy", "enforce_auth", bool),
+    "RATE_LIMIT_RPM":      ("proxy", "rate_limit_rpm", int),
+    "RATE_LIMIT_CONCURRENCY": ("proxy", "rate_limit_concurrency", int),
+    "TOKEN_DAILY_QUOTA":   ("proxy", "token_daily_quota", int),
     "PORTAL_UPSTREAM":     ("proxy", "_portal_upstream", str),  # handled in proxy
     # paths
     "LOG_DIR":             ("paths", "log_dir", str),

@@ -59,6 +59,16 @@ The portal looks for `config.toml` in this order:
 | Ollama | No | `true` (proxy must enforce) |
 | vLLM / TGI | Optional | `true` (recommended) |
 
+### Rate limiting + quotas
+
+| Key | Env var | Type | Default | Description |
+|-----|---------|------|---------|-------------|
+| `rate_limit_rpm` | `RATE_LIMIT_RPM` | int | `60` | Max requests/min per key (`0` = off) |
+| `rate_limit_concurrency` | `RATE_LIMIT_CONCURRENCY` | int | `5` | Max simultaneous streams per key (`0` = off) |
+| `token_daily_quota` | `TOKEN_DAILY_QUOTA` | int | `0` | Max tokens/day per key (`0` = off) |
+
+All limits return `429` with `Retry-After` and an OpenAI-compatible JSON error body.
+
 ## `[paths]` — File locations
 
 | Key | Env var | Type | Default | Description |

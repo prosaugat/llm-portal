@@ -64,6 +64,8 @@ How LLM Portal handles authentication, sessions, and API keys.
 
 ## Rate limiting
 
+### Login rate limiting
+
 Login attempts are rate-limited per IP address:
 
 - **Default:** 8 attempts per 10-minute window
@@ -72,6 +74,21 @@ Login attempts are rate-limited per IP address:
 - **Bypass:** Restarting the portal clears all counters
 
 Failed attempts are logged to `logs/auth/auth.log` with IP and username.
+
+### API rate limiting (proxy)
+
+All `/v1/*` requests are rate-limited per authenticated API key:
+
+| Limit | Default | Returns | Config |
+|-------|---------|---------|--------|
+| Requests per minute | 60 | `429` + `Retry-After` | `proxy.rate_limit_rpm` |
+| Concurrent streams | 5 | `429` | `proxy.rate_limit_concurrency` |
+| Tokens per day | unlimited | `429` + `Retry-After: 3600` | `proxy.token_daily_quota` |
+
+- Sliding 60-second window per key (not fixed buckets)
+- Concurrency counter is released when the response finishes (including streams)
+- Token quota resets daily (in-memory)
+- Portal (`/portal/*`) and health (`/health`) are exempt
 
 ## API key security
 
