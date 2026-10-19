@@ -1,0 +1,47 @@
+# Example: vLLM / TGI / any OpenAI-compatible backend
+# Copy to config.toml and adjust for your setup.
+
+[portal]
+host = "127.0.0.1"
+port = 8081
+session_hours = 12
+open_signup = false   # closed signup for production
+
+[branding]
+name = "Enterprise AI Gateway"
+primary_color = "#7c3aed"
+accent_color = "#f59e0b"
+
+[backend]
+type = "openai"
+url = "http://127.0.0.1:8000/v1"
+api_domain = "ai.internal.example.com"
+provider_name = "vllm"
+model = "meta-llama/Llama-3.1-70B-Instruct"
+model_alias = "Llama 3.1 70B"
+ctx_per_slot = 128000
+slots = 8
+
+[proxy]
+enabled = true
+host = "0.0.0.0"
+port = 8080
+# vLLM may have --api-key but proxy enforcement adds per-user attribution
+enforce_auth = true
+
+[paths]
+data_dir = "/var/lib/llm-portal/data"
+log_dir = "/var/log/llm-portal"
+keys_file = "/var/lib/llm-portal/data/api_keys.txt"
+db_file = "/var/lib/llm-portal/data/portal.db"
+userctl = "./userctl.sh"
+
+[security]
+pbkdf2_iterations = 300000   # higher for production
+session_cookie = "llmportal"
+rate_limit_attempts = 5      # stricter for production
+rate_limit_window_minutes = 15
+
+[logging]
+retention_days = 30          # longer retention for compliance
+rotate_time = "00:05:00"

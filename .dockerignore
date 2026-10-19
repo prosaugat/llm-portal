@@ -1,0 +1,15 @@
+# Docker ignore
+.git
+.github
+__pycache__
+*.pyc
+data/
+logs/
+config.toml
+*.db
+*.md
+!README.md
+docs/
+examples/
+tests/
+.env

@@ -1,0 +1,59 @@
+# Example Docker Compose for LLM Portal + Ollama
+# Usage: docker compose up -d
+#
+# For production, put a TLS reverse proxy (Caddy/Traefik) in front.
+
+services:
+  portal:
+    build: .
+    container_name: llm-portal
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PORTAL_HOST=0.0.0.0
+      - LLM_PORTAL_CONFIG=/app/config.toml
+    restart: unless-stopped
+    command: python3 -m llm_portal
+
+  proxy:
+    build: .
+    container_name: llm-proxy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PORTAL_UPSTREAM=portal:8081
+      - UPSTREAM=ollama:11434
+      - LLM_PORTAL_CONFIG=/app/config.toml
+    restart: unless-stopped
+    command: python3 -m llm_portal proxy
+    depends_on:
+      - portal
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+    # Uncomment for GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ollama-models:

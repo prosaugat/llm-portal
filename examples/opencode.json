@@ -1,0 +1,24 @@
+# Example OpenCode configuration
+# Copy this to ~/.config/opencode/opencode.json and replace the API key.
+#
+# Or use the portal's built-in generator: visit /portal/dashboard → OpenCode config
+
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "myllm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "My LLM Server",
+      "options": {
+        "baseURL": "https://ai.example.com/v1",
+        "apiKey": "${AISERVER_API_KEY}"
+      },
+      "models": {
+        "default": {
+          "name": "Default Model"
+        }
+      }
+    }
+  },
+  "model": "myllm/default"
+}

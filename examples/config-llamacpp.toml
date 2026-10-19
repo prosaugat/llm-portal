@@ -1,0 +1,47 @@
+# Example: llama.cpp backend
+# Copy to config.toml and adjust for your setup.
+
+[portal]
+host = "127.0.0.1"
+port = 8081
+session_hours = 12
+open_signup = true
+
+[branding]
+name = "My LLM Portal"
+primary_color = "#0066ff"
+accent_color = "#FF9900"
+
+[backend]
+type = "llamacpp"
+url = "http://127.0.0.1:8090"
+api_domain = "ai.example.com"
+provider_name = "myllm"
+model = "qwen3-32b"
+model_alias = "Qwen 3 32B"
+ctx_per_slot = 32768
+slots = 4
+
+[proxy]
+enabled = true
+host = "0.0.0.0"
+port = 8080
+# llama.cpp has native auth (AUTH=on) — no proxy enforcement needed
+enforce_auth = false
+
+[paths]
+data_dir = "./data"
+log_dir = "./logs"
+keys_file = "./data/api_keys.txt"
+db_file = "./data/portal.db"
+userctl = "./userctl.sh"
+
+[security]
+pbkdf2_iterations = 200000
+session_cookie = "llmportal"
+rate_limit_attempts = 8
+rate_limit_window_minutes = 10
+
+[logging]
+retention_days = 7
+rotate_time = "00:05:00"

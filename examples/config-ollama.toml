@@ -1,0 +1,47 @@
+# Example: Ollama backend
+# Copy to config.toml and adjust for your setup.
+
+[portal]
+host = "127.0.0.1"
+port = 8081
+session_hours = 12
+open_signup = true
+
+[branding]
+name = "My Ollama Portal"
+primary_color = "#0066ff"
+accent_color = "#FF9900"
+
+[backend]
+type = "ollama"
+url = "http://127.0.0.1:11434"
+api_domain = "ai.example.com"
+provider_name = "myollm"
+model = "llama3.2"
+model_alias = "Llama 3.2"
+ctx_per_slot = 8192
+slots = 1
+
+[proxy]
+enabled = true
+host = "0.0.0.0"
+port = 8080
+# Ollama has NO native auth — the proxy MUST enforce API keys
+enforce_auth = true
+
+[paths]
+data_dir = "./data"
+log_dir = "./logs"
+keys_file = "./data/api_keys.txt"
+db_file = "./data/portal.db"
+userctl = "./userctl.sh"
+
+[security]
+pbkdf2_iterations = 200000
+session_cookie = "llmportal"
+rate_limit_attempts = 8
+rate_limit_window_minutes = 10
+
+[logging]
+retention_days = 7
+rotate_time = "00:05:00"
