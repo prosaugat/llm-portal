@@ -667,6 +667,129 @@ border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite;ma
   .narrow{margin:4vh auto;padding:32px 24px}
   .stats{grid-template-columns:repeat(2,1fr)}
 }
+/* ── skeleton loading ── */
+.skeleton{background:linear-gradient(90deg,var(--glass) 25%,rgba(255,255,255,0.08) 50%,var(--glass) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-row{height:14px;margin:10px 0;border-radius:4px}
+.skeleton-card{height:100px;border-radius:16px;margin-bottom:16px}
+
+/* ── hamburger / nav drawer ── */
+.hamburger{display:none;background:none;border:none;color:var(--txt);font-size:22px;
+  cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1}
+.hamburger:hover{background:var(--glass)}
+.nav-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:40;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+.nav-overlay.open{opacity:1;pointer-events:auto}
+.nav-drawer{position:fixed;top:0;left:-260px;width:260px;height:100%;
+  background:rgba(10,14,24,0.98);border-right:1px solid var(--line);z-index:50;
+  transition:left .3s;padding:20px;backdrop-filter:blur(20px);overflow-y:auto}
+.nav-drawer.open{left:0}
+.nav-drawer a{display:block;color:var(--txt);text-decoration:none;padding:12px 16px;
+  border-radius:10px;margin:4px 0;transition:all .2s;font-size:15px}
+.nav-drawer a:hover,.nav-drawer a.active{background:rgba(0,102,255,0.1);color:var(--acc)}
+
+/* ── command palette ── */
+.cmdk-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;
+  display:none;align-items:flex-start;justify-content:center;padding-top:15vh;
+  backdrop-filter:blur(4px)}
+.cmdk-overlay.open{display:flex}
+.cmdk-box{background:rgba(16,20,32,0.98);border:1px solid var(--line);border-radius:16px;
+  width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.5);overflow:hidden;
+  animation:fadeUp .2s ease}
+.cmdk-input{width:100%;padding:16px 20px;background:none;border:none;
+  border-bottom:1px solid var(--line);color:var(--txt);font-size:16px;outline:none}
+.cmdk-input::placeholder{color:var(--mut)}
+.cmdk-list{max-height:320px;overflow-y:auto;padding:8px}
+.cmdk-item{padding:10px 16px;border-radius:10px;cursor:pointer;display:flex;
+  align-items:center;gap:12px;transition:background .15s}
+.cmdk-item:hover,.cmdk-item.selected{background:rgba(0,102,255,0.12)}
+.cmdk-item .cmdk-icon{font-size:18px;width:24px;text-align:center}
+.cmdk-item .cmdk-label{flex:1;font-size:14px}
+.cmdk-item .cmdk-shortcut{font-size:11px;color:var(--mut);background:var(--glass);
+  padding:2px 8px;border-radius:6px}
+.cmdk-empty{padding:20px;text-align:center;color:var(--mut);font-size:14px}
+.cmdk-hint{padding:8px 16px;border-top:1px solid var(--line);font-size:11px;
+  color:var(--mut);display:flex;justify-content:space-between}
+kbd{background:var(--glass);border:1px solid var(--line);border-radius:4px;
+  padding:1px 5px;font-size:10px;font-family:ui-monospace,monospace}
+
+/* ── theme toggle ── */
+.theme-toggle{background:none;border:1px solid var(--line);color:var(--txt);
+  padding:5px 10px;border-radius:8px;cursor:pointer;font-size:15px;
+  transition:all .2s;line-height:1}
+.theme-toggle:hover{border-color:var(--acc);background:var(--glass)}
+body.light{--bg:#f0f2f5;--card:rgba(255,255,255,0.92);--line:rgba(0,0,0,0.1);
+  --txt:#1a1a2e;--mut:#666;--glass:rgba(0,0,0,0.04)}
+body.light header{background:rgba(240,242,245,0.92)}
+body.light .card.glass{background:rgba(255,255,255,0.7)}
+body.light input,body.light select{background:rgba(255,255,255,0.8)}
+body.light .btn{background:rgba(255,255,255,0.8)}
+body.light pre.log{background:rgba(240,242,245,0.95);color:#333}
+body.light code.k{background:rgba(240,242,245,0.9);color:#2d5016}
+body.light .config-block{background:rgba(240,242,245,0.95);color:#333}
+body.light .pre-scroll{background:rgba(240,242,245,0.8);color:#333}
+body.light .nav-drawer{background:rgba(240,242,245,0.98)}
+body.light .cmdk-box{background:rgba(255,255,255,0.98)}
+body.light .ovc{background:rgba(255,255,255,0.95)}
+body.light .t{background:rgba(255,255,255,0.95)}
+
+/* ── usage chart ── */
+.usage-chart{margin-top:12px}
+.usage-chart svg{width:100%;height:auto;display:block}
+
+/* ── session list ── */
+.session-item{display:flex;align-items:center;gap:12px;padding:12px;
+  border:1px solid var(--line);border-radius:12px;margin-bottom:8px;transition:all .2s}
+.session-item:hover{border-color:rgba(0,102,255,0.3)}
+.session-item.current{border-color:var(--ok);background:rgba(52,211,153,0.05)}
+.session-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.session-dot.active{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.session-dot.expired{background:var(--mut)}
+.session-info{flex:1}
+.session-info .hash{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--mut)}
+.session-info .meta{font-size:12px;color:var(--mut);margin-top:2px}
+
+/* ── getting started checklist ── */
+.checklist{list-style:none;padding:0;margin:0}
+.checklist li{display:flex;align-items:center;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--line)}
+.checklist li:last-child{border-bottom:none}
+.checklist .check{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;
+  font-size:12px}
+.checklist li.done .check{background:var(--ok);border-color:var(--ok);color:#fff}
+.checklist .step-text{flex:1;font-size:14px}
+.checklist li.done .step-text{color:var(--mut);text-decoration:line-through}
+.checklist .step-link{font-size:12px}
+
+/* ── profile avatar ── */
+.avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:28px;font-weight:800;color:#fff;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--orange))}
+.avatar-lg{width:80px;height:80px;font-size:36px}
+
+/* ── login enhancements ── */
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;padding:4px}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:40px}
+
+/* ── login history ── */
+.history-item{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--line);font-size:13px}
+.history-item:last-child{border-bottom:none}
+.history-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.history-dot.ok{background:var(--ok)}
+.history-dot.fail{background:var(--err)}
+
+@media(max-width:640px){
+  .hamburger{display:block!important}
+  nav{display:none}
+  .cmdk-overlay{padding-top:8vh}
+  .session-item{flex-wrap:wrap}
+  .checklist li{flex-wrap:wrap}
+}
 </style>
 <script>
 const CSRF = "{{CSRF}}";
@@ -744,14 +867,81 @@ function updPw(inp, barId, labelId){
   label.className = "pw-strength-label " + s.cls;
   label.textContent = inp.value ? s.label : "";
 }
+/* ── Theme toggle ── */
+function toggleTheme(){
+  document.body.classList.toggle("light");
+  const isLight = document.body.classList.contains("light");
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+  const btn = document.getElementById("themeBtn");
+  if(btn) btn.innerHTML = isLight ? "&#x2600;&#xFE0F;" : "&#x1F319;";
+}
+(function(){
+  const saved = localStorage.getItem("theme");
+  if(saved === "light"){
+    document.body.classList.add("light");
+    const btn = document.getElementById("themeBtn");
+    if(btn) btn.innerHTML = "&#x2600;&#xFE0F;";
+  }
+})();
+/* ── Hamburger / Nav drawer ── */
+function toggleNav(){
+  document.getElementById("navDrawer").classList.toggle("open");
+  document.getElementById("navOverlay").classList.toggle("open");
+}
+/* ── Command palette ── */
+var CMDK_ITEMS = [
+  {icon:"&#x1F4CA;", label:"Dashboard", action:function(){location="/portal/dashboard"}},
+  {icon:"&#x2699;&#xFE0F;", label:"Account", action:function(){location="/portal/account"}},
+  {icon:"&#x1F6E1;&#xFE0F;", label:"Admin Console", action:function(){location="/portal/admin"}},
+  {icon:"&#x1F511;", label:"Reveal API Key", action:function(){var b=document.getElementById("revealBtn");if(b)b.click();}},
+  {icon:"&#x1F4CB;", label:"Copy API Key", action:function(){var b=document.getElementById("copyBtn");if(b)b.click();}},
+  {icon:"&#x1F504;", label:"Rotate API Key", action:function(){var b=document.getElementById("rotateBtn");if(b)b.click();}},
+  {icon:"&#x1F50A;", label:"Copy OpenCode Config", action:function(){if(typeof copyOC==="function")copyOC();}},
+  {icon:"&#x1F6AA;", label:"Sign out", action:function(){logout()}}
+];
+function openCmdk(){
+  document.getElementById("cmdk").classList.add("open");
+  var inp = document.getElementById("cmdkInput");
+  inp.value = ""; inp.focus();
+  filterCmdk();
+}
+function closeCmdk(){
+  document.getElementById("cmdk").classList.remove("open");
+}
+function filterCmdk(){
+  var q = document.getElementById("cmdkInput").value.toLowerCase();
+  var list = CMDK_ITEMS.filter(function(i){ return i.label.toLowerCase().indexOf(q) !== -1; });
+  document.getElementById("cmdkList").innerHTML = list.length
+    ? list.map(function(item, idx){
+        var gi = CMDK_ITEMS.indexOf(item);
+        return '<div class="cmdk-item'+(idx===0?" selected":"")+'" onclick="CMDK_ITEMS['+gi+'].action();closeCmdk()">'
+          + '<span class="cmdk-icon">'+item.icon+'</span>'
+          + '<span class="cmdk-label">'+item.label+'</span></div>';
+      }).join("")
+    : '<div class="cmdk-empty">No results found</div>';
+}
+document.addEventListener("keydown", function(e){
+  if((e.ctrlKey||e.metaKey) && e.key==="k"){ e.preventDefault(); openCmdk(); }
+  if(e.key==="Escape") closeCmdk();
+});
+/* ── Hide admin nav for non-admins ── */
+(function(){
+  var chip = document.querySelector(".chip");
+  if(chip && chip.textContent.indexOf("superadmin")===-1 && chip.textContent.indexOf("admin")===-1){
+    var na = document.getElementById("navAdminLink");
+    if(na) na.style.display = "none";
+  }
+})();
 </script></head>
 <body>
 <header>
+  <button class="hamburger" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
   <a href="/" class="logo">
     <span class="logo-text" style="font-size:18px;font-weight:800;background:linear-gradient(90deg,var(--acc),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">{{PORTAL_NAME}}</span>
   </a>
   <nav>{{NAV}}</nav>
   <div class="spacer"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">&#x1F319;</button>
   <span class="chip">{{USER_CHIP}}</span>
   {{LOGOUT_BTN}}
 </header>
@@ -760,6 +950,25 @@ function updPw(inp, barId, labelId){
 <div id="ov" class="ov hidden"><div class="ovc">
   <div class="spin"></div><div id="ovmsg">Working…</div>
 </div></div>
+<!-- Command Palette -->
+<div class="cmdk-overlay" id="cmdk" onclick="if(event.target===this)closeCmdk()">
+  <div class="cmdk-box">
+    <input class="cmdk-input" id="cmdkInput" placeholder="Type a command or search..." oninput="filterCmdk()" autocomplete="off">
+    <div class="cmdk-list" id="cmdkList"></div>
+    <div class="cmdk-hint"><span><kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle</span><span><kbd>Esc</kbd> to close</span></div>
+  </div>
+</div>
+<!-- Mobile Nav Drawer -->
+<div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+<div class="nav-drawer" id="navDrawer">
+  <div style="font-size:16px;font-weight:800;margin-bottom:20px;background:linear-gradient(90deg,var(--acc),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">{{PORTAL_NAME}}</div>
+  <a href="/portal/dashboard" onclick="toggleNav()">&#x1F4CA; Dashboard</a>
+  <a href="/portal/account" onclick="toggleNav()">&#x2699; Account</a>
+  <a href="/portal/admin" onclick="toggleNav()" id="navAdminLink">&#x1F6E1; Admin Console</a>
+  <div style="border-top:1px solid var(--line);margin:12px 0;padding-top:12px">
+    <button class="btn sm" style="width:100%" onclick="logout()">&#x1F6AA; Sign out</button>
+  </div>
+</div>
 </body></html>"""
 
 
@@ -808,21 +1017,43 @@ def login_page():
     <label>Username</label>
     <input name="username" autocomplete="username" required autofocus placeholder="your username">
     <label>Password</label>
-    <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••">
-    <p style="margin-top:20px"><button class="btn primary" style="width:100%">Sign in</button></p>
+    <div class="pw-wrap">
+      <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" id="loginPw">
+      <button type="button" class="pw-toggle" onclick="toggleLoginPw()" id="pwToggleBtn" title="Show password">&#x1F441;</button>
+    </div>
+    <p style="margin-top:20px"><button class="btn primary" style="width:100%" id="loginBtn">Sign in</button></p>
   </form>
   <p class="muted" style="margin-top:20px">{"No account? <a href=\"/portal/signup\">Sign up</a> to get your own API key."
                     if signup_open() else "Sign-up is currently closed — ask a superadmin."}</p>
 </div>
 <script>
+function toggleLoginPw(){{
+  const inp = document.getElementById("loginPw");
+  const btn = document.getElementById("pwToggleBtn");
+  if(inp.type === "password"){{ inp.type = "text"; btn.innerHTML = "&#x1F440;"; btn.title = "Hide password"; }}
+  else {{ inp.type = "password"; btn.innerHTML = "&#x1F441;"; btn.title = "Show password"; }}
+}}
 document.getElementById("f").addEventListener("submit", async e => {{
   e.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="pulse">Signing in…</span>';
   const d = Object.fromEntries(new FormData(e.target).entries());
   const r = await api("/portal/api/login", d);
   if(r.ok) location = "/portal/dashboard";
-  else toast(r.body.error || ("login failed ("+r.status+")"), true);
+  else {{
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    toast(r.body.error || ("login failed ("+r.status+")"), true);
+    const form = document.getElementById("f");
+    form.style.animation = "none";
+    form.offsetHeight;
+    form.style.animation = "shake .4s ease";
+  }}
 }});
-</script>"""
+</script>
+<style>@keyframes shake{{0%,100%{{transform:translateX(0)}}25%{{transform:translateX(-6px)}}75%{{transform:translateX(6px)}}}}</style>"""
     return page("Sign in", body)
 
 
@@ -935,13 +1166,53 @@ role <span class="badge {{ROLECLASS}}">{{ROLE}}</span></p>
   </div>
 </div>
 
+<div class="grid2">
+  <!-- Getting Started -->
+  <div class="card glass">
+    <h2><span class="icon">&#x1F3AF;</span> Getting started
+      <span class="muted" style="font-size:12px;font-weight:400" id="gsProgress"></span></h2>
+    <ul class="checklist" id="checklist">
+      <li id="gs1">
+        <span class="check">&#x2713;</span>
+        <span class="step-text">Create your account</span>
+        <span class="muted step-link">done</span>
+      </li>
+      <li id="gs2">
+        <span class="check">&#x2713;</span>
+        <span class="step-text">Reveal your API key</span>
+        <button class="btn sm step-link" onclick="document.getElementById('revealBtn').click()">Reveal</button>
+      </li>
+      <li id="gs3">
+        <span class="check">&#x2713;</span>
+        <span class="step-text">Make your first API call</span>
+        <a href="#quickconnect" class="btn sm step-link">Quick connect</a>
+      </li>
+      <li id="gs4">
+        <span class="check">&#x2713;</span>
+        <span class="step-text">Copy OpenCode config</span>
+        <button class="btn sm step-link" onclick="copyOC()">Copy</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Usage Chart -->
+  <div class="card">
+    <h2><span class="icon">&#x1F4C8;</span> Your usage (24h)
+      <span class="muted" style="font-size:12px;font-weight:400" id="usageTotal"></span></h2>
+    <div class="usage-chart" id="usageChart">
+      <div class="skeleton skeleton-card" style="height:80px"></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:12px" id="usageLegend"></div>
+  </div>
+</div>
+
 <!-- Quick Connect -->
-<div class="card">
+<div class="card" id="quickconnect">
   <h2><span class="icon">&#x26A1;</span> Quick connect</h2>
   <div class="grid2">
     <div>
       <p class="muted" style="margin-bottom:6px">API endpoint</p>
-      <code class="k" style="cursor:pointer" onclick=&quot;copyText(this.textContent)&quot; title="click to copy">
+      <code class="k" style="cursor:pointer" onclick="copyText(this.textContent)" title="click to copy">
         https://{{API_DOMAIN}}/v1
       </code>
     </div>
@@ -953,7 +1224,7 @@ role <span class="badge {{ROLECLASS}}">{{ROLE}}</span></p>
     </div>
     <div>
       <p class="muted" style="margin-bottom:6px">Test with curl</p>
-      <code class="k" style="font-size:12px;cursor:pointer" onclick=&quot;copyText(this.textContent)&quot;
+      <code class="k" style="font-size:12px;cursor:pointer" onclick="copyText(this.textContent)"
             title="click to copy">curl https://{{API_DOMAIN}}/v1/models \\\n  -H "Authorization: Bearer YOUR_KEY"</code>
     </div>
   </div>
@@ -1033,6 +1304,68 @@ function updateActTime(){
 }
 setInterval(updateActTime, 15000);
 updateActTime();
+
+/* ── Usage chart ── */
+async function loadUsage(){
+  const r = await api("/portal/api/my-usage");
+  if(!r.ok) return;
+  const hours = r.body.hours || [];
+  const total = r.body.total || 0;
+  const statuses = r.body.statuses || {};
+  document.getElementById("usageTotal").textContent = total + " calls";
+  const max = Math.max(1, ...hours.map(h => h.n));
+  const W = 400, H = 80, pad = 2;
+  const bw = (W - pad * hours.length) / hours.length;
+  let bars = "", labels = "";
+  hours.forEach((h, i) => {
+    const x = i * (bw + pad);
+    const bh = Math.max(2, (h.n / max) * (H - 16));
+    const y = H - bh;
+    const col = h.n > 0 ? "var(--acc)" : "var(--line)";
+    bars += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh
+      + '" rx="2" fill="' + col + '" opacity="0.85"><title>' + h.h + ' — ' + h.n + ' calls</title></rect>';
+    if(i % 4 === 0) labels += '<text x="' + (x + bw/2) + '" y="' + (H + 2)
+      + '" text-anchor="middle" font-size="8" fill="var(--mut)">' + h.h + '</text>';
+  });
+  document.getElementById("usageChart").innerHTML =
+    '<svg viewBox="0 -4 ' + W + ' ' + (H + 12) + '" xmlns="http://www.w3.org/2000/svg">'
+    + bars + labels + '</svg>';
+  const ok = statuses["200"] || 0;
+  const err = total - ok;
+  document.getElementById("usageLegend").innerHTML =
+    '<span><span style="display:inline-block;width:10px;height:10px;background:var(--acc);border-radius:2px"></span> OK: ' + ok + '</span>'
+    + '<span><span style="display:inline-block;width:10px;height:10px;background:var(--err);border-radius:2px"></span> Errors: ' + err + '</span>';
+}
+loadUsage();
+setInterval(loadUsage, 30000);
+
+/* ── Getting started checklist ── */
+function updateChecklist(){
+  let done = 1;
+  document.getElementById("gs1").classList.add("done");
+  const keyval = document.getElementById("keyval").textContent;
+  if(keyval && keyval !== "..." && keyval !== "(none)" && !keyval.includes("\u2026")){
+    document.getElementById("gs2").classList.add("done");
+    done++;
+  }
+  api("/portal/api/activity").then(r => {
+    if(r.ok && (r.body.lines||[]).length > 0){
+      document.getElementById("gs3").classList.add("done");
+      done++;
+    }
+    const oc = document.getElementById("occonfig").textContent;
+    if(oc && oc.indexOf("{") !== -1){
+      document.getElementById("gs4").classList.add("done");
+      done++;
+    }
+    document.getElementById("gsProgress").textContent = done + "/4 complete";
+    if(done >= 4){
+      const gs = document.getElementById("checklist").closest(".card");
+      if(gs) gs.style.borderColor = "var(--ok)";
+    }
+  });
+}
+setTimeout(updateChecklist, 1500);
 </script>"""
     body = (body.replace("{{USER}}", esc(u["username"]))
                 .replace("{{CREATED}}", esc(created or "—"))
@@ -1049,46 +1382,91 @@ updateActTime();
 
 def account_page(u, created):
     keynote = "<b>and revokes your API key</b>" if True else ""
+    initial = esc(u["username"][0].upper() if u["username"] else "?")
     body = """
-<div class="narrow" style="max-width:600px;margin:5vh auto">
+<div class="narrow" style="max-width:720px;margin:3vh auto">
   <div class="logo-wrap"><span class="logo-text" style="font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--acc),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">{{PORTAL_NAME}}</span></div>
   <h1>Account</h1>
-  <p class="subtitle">Manage your profile, password, and account status.</p>
+  <p class="subtitle">Manage your profile, sessions, and security.</p>
 
-  <div style="text-align:left;margin-bottom:20px">
-    <div style="background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:16px">
-      <p style="margin:6px 0"><span class="muted">Username:</span> <b>{{USER}}</b></p>
-      <p style="margin:6px 0"><span class="muted">Role:</span> <span class="badge {{ROLECLASS}}">{{ROLE}}</span></p>
-      <p style="margin:6px 0"><span class="muted">Status:</span> <span class="badge ok">active</span></p>
-      <p style="margin:6px 0"><span class="muted">Created:</span> <span class="muted">{{CREATED}}</span></p>
+  <!-- Profile Card -->
+  <div class="card glass" style="text-align:left;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="avatar avatar-lg">{{INITIAL}}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:20px;font-weight:700">{{USER}}</div>
+        <div style="margin-top:4px">
+          <span class="badge {{ROLECLASS}}">{{ROLE}}</span>
+          <span class="badge ok">active</span>
+        </div>
+        <div class="muted" style="font-size:13px;margin-top:6px">Joined {{CREATED}}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" onclick="toggleTheme()" id="themeBtnAcct">&#x1F319; Theme</button>
+        <button class="btn sm" onclick="logout()">&#x1F6AA; Sign out</button>
+      </div>
     </div>
-    <p style="margin-top:12px"><button class="btn sm" onclick="logout()">&#x1F6AA; Sign out</button></p>
   </div>
 
-  <div class="card" style="text-align:left">
+  <!-- Usage Summary -->
+  <div class="card" style="text-align:left;margin-bottom:16px">
+    <h2><span class="icon">&#x1F4C8;</span> Usage summary</h2>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="val" id="acTotal">—</div><div class="lbl">Calls (24h)</div></div>
+      <div class="stat"><div class="val" id="acOk">—</div><div class="lbl">Successful</div></div>
+      <div class="stat"><div class="val" id="acErr">—</div><div class="lbl">Errors</div></div>
+    </div>
+    <div class="usage-chart" id="acUsageChart" style="margin-top:10px">
+      <div class="skeleton skeleton-card" style="height:60px"></div>
+    </div>
+  </div>
+
+  <!-- Active Sessions -->
+  <div class="card" style="text-align:left;margin-bottom:16px">
+    <h2><span class="icon">&#x1F510;</span> Active sessions
+      <span class="muted" style="font-size:12px;font-weight:400" id="sessCount"></span></h2>
+    <div id="sessList"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>
+  </div>
+
+  <!-- Login History -->
+  <div class="card" style="text-align:left;margin-bottom:16px">
+    <h2><span class="icon">&#x1F4C5;</span> Recent logins</h2>
+    <div id="loginHist"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>
+  </div>
+
+  <!-- Change Password -->
+  <div class="card" style="text-align:left;margin-bottom:16px">
     <h2>&#x1F511; Change password</h2>
     <form id="pwf" style="text-align:left">
       <label>Current password</label>
-      <input name="old_password" type="password" autocomplete="current-password" required placeholder="••••••••">
+      <input name="old_password" type="password" autocomplete="current-password" required placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022">
       <label>New password (min 8)</label>
-      <input name="new_password" type="password" minlength="8" required placeholder="••••••••"
+      <div class="pw-wrap">
+        <input name="new_password" type="password" minlength="8" required placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
              id="newpw" oninput="updPw(this,'acPwBar','acPwLabel')">
+        <button type="button" class="pw-toggle" onclick="togglePw('newpw',this)">&#x1F441;</button>
+      </div>
       <div class="pw-strength"><div class="bar" id="acPwBar"></div></div>
       <div class="pw-strength-label" id="acPwLabel"></div>
       <p style="margin-top:14px"><button class="btn primary">Update password</button></p>
     </form>
   </div>
 </div>
-<div class="card danger-zone" style="max-width:600px;margin:0 auto 20px;text-align:left">
+<div class="card danger-zone" style="max-width:720px;margin:0 auto 20px;text-align:left">
   <h2>&#x1F6A8; Danger zone</h2>
   <p class="muted">Deleting your account removes your portal login {{KEYNOTE}}
-  — this cannot be undone.</p>
+  \u2014 this cannot be undone.</p>
   <div class="toolbar">
     <input id="delconfirm" placeholder="type your username to confirm">
     <button class="btn danger" id="delBtn">Delete my account</button>
   </div>
 </div>
 <script>
+function togglePw(id, btn){
+  const inp = document.getElementById(id);
+  if(inp.type === "password"){ inp.type = "text"; btn.innerHTML = "&#x1F440;"; }
+  else { inp.type = "password"; btn.innerHTML = "&#x1F441;"; }
+}
 document.getElementById("pwf").addEventListener("submit", async e => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target).entries());
@@ -1104,16 +1482,102 @@ document.getElementById("delBtn").onclick = async () => {
   if(!confirm("Permanently delete account "+un+" and revoke the API key?")) return;
   const r = await api("/portal/api/account/delete", {username: un});
   if(!r.ok) return toast(r.body.error || "delete failed", true);
-  await runJob(r.body.job, "Deleting account and revoking key…");
+  await runJob(r.body.job, "Deleting account and revoking key\u2026");
   location = "/portal/login?deleted=1";
 };
+
+/* \u2500\u2500 Usage chart \u2500\u2500 */
+async function loadAcUsage(){
+  const r = await api("/portal/api/my-usage");
+  if(!r.ok) return;
+  const hours = r.body.hours || [];
+  const total = r.body.total || 0;
+  const statuses = r.body.statuses || {};
+  const ok = statuses["200"] || 0;
+  const err = total - ok;
+  document.getElementById("acTotal").textContent = total;
+  document.getElementById("acOk").textContent = ok;
+  document.getElementById("acErr").textContent = err;
+  const max = Math.max(1, ...hours.map(h => h.n));
+  const W = 400, H = 60, pad = 2;
+  const bw = (W - pad * hours.length) / hours.length;
+  let bars = "";
+  hours.forEach((h, i) => {
+    const x = i * (bw + pad);
+    const bh = Math.max(2, (h.n / max) * (H - 8));
+    const y = H - bh;
+    bars += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh
+      + '" rx="2" fill="var(--acc)" opacity="0.8"><title>' + h.h + ' \u2014 ' + h.n + '</title></rect>';
+  });
+  document.getElementById("acUsageChart").innerHTML =
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">' + bars + '</svg>';
+}
+loadAcUsage();
+
+/* \u2500\u2500 Sessions \u2500\u2500 */
+async function loadSessions(){
+  const r = await api("/portal/api/my-sessions");
+  if(!r.ok) return;
+  const sessions = r.body.sessions || [];
+  document.getElementById("sessCount").textContent = sessions.length + " active";
+  if(!sessions.length){
+    document.getElementById("sessList").innerHTML = '<p class="muted">No active sessions.</p>';
+    return;
+  }
+  document.getElementById("sessList").innerHTML = sessions.map((s, i) =>
+    '<div class="session-item' + (i === 0 ? ' current' : '') + '">'
+    + '<span class="session-dot ' + (s.expired ? 'expired' : 'active') + '"></span>'
+    + '<div class="session-info">'
+    + '<div class="hash">' + esc(s.prefix) + '\u2026</div>'
+    + '<div class="meta">Created ' + esc(s.created) + ' &middot; Expires ' + esc(s.expires) + '</div>'
+    + '</div>'
+    + (i === 0 ? '<span class="badge ok">this device</span>'
+               : '<button class="btn sm" onclick="revokeSession(\'' + esc(s.hash) + '\')">Revoke</button>')
+    + '</div>'
+  ).join("");
+}
+async function revokeSession(hash){
+  if(!confirm("Revoke this session?")) return;
+  const r = await api("/portal/api/session/revoke", {hash: hash});
+  if(r.ok){ toast("session revoked"); loadSessions(); }
+  else toast(r.body.error || "revoke failed", true);
+}
+loadSessions();
+
+/* \u2500\u2500 Login history \u2500\u2500 */
+async function loadLogins(){
+  const r = await api("/portal/api/my-logins");
+  if(!r.ok) return;
+  const logins = r.body.logins || [];
+  if(!logins.length){
+    document.getElementById("loginHist").innerHTML = '<p class="muted">No login history.</p>';
+    return;
+  }
+  document.getElementById("loginHist").innerHTML = logins.map(l =>
+    '<div class="history-item">'
+    + '<span class="history-dot ' + (l.result === 'ok' ? 'ok' : 'fail') + '"></span>'
+    + '<span style="flex:1">' + esc(l.ts) + '</span>'
+    + '<span class="muted">' + esc(l.ip) + '</span>'
+    + '<span class="badge ' + (l.result === 'ok' ? 'ok' : 'off') + '">' + esc(l.result) + '</span>'
+    + '</div>'
+  ).join("");
+}
+loadLogins();
+
+/* \u2500\u2500 Theme toggle sync \u2500\u2500 */
+(function(){
+  const saved = localStorage.getItem("theme");
+  const btn = document.getElementById("themeBtnAcct");
+  if(btn && saved === "light") btn.innerHTML = "&#x2600;&#xFE0F; Light";
+})();
 </script>"""
     role_class = "superadmin" if u["role"] == "superadmin" else "role"
     body = (body.replace("{{USER}}", esc(u["username"]))
                 .replace("{{ROLE}}", esc(u["role"]))
                 .replace("{{ROLECLASS}}", role_class)
-                .replace("{{CREATED}}", esc(created or "—"))
+                .replace("{{CREATED}}", esc(created or "\u2014"))
                 .replace("{{KEYNOTE}}", keynote)
+                .replace("{{INITIAL}}", initial)
                 .replace("{{JSUSER}}", json.dumps(u["username"])))
     return page("Account", body, u)
 
@@ -1821,6 +2285,68 @@ class Handler(BaseHTTPRequestHandler):
             s = self._need_auth(csrf=False)
             if s:
                 self._json({"lines": own_activity(s["username"], 30)})
+        elif p == "/portal/api/my-usage":
+            s = self._need_auth(csrf=False)
+            if s:
+                from collections import defaultdict as _dd
+                hourly = _dd(int)
+                status_codes = _dd(int)
+                total = 0
+                now = time.time()
+                cutoff = now - 86400
+                username = s["username"]
+                needle = f"\tuser={username}\t"
+                try:
+                    for line in tail_file(ACCESSLOG, 2 * 1024 * 1024):
+                        if needle not in line:
+                            continue
+                        parts = line.split("\t")
+                        if len(parts) < 6:
+                            continue
+                        ts_str = parts[0].strip()
+                        try:
+                            ts = time.mktime(time.strptime(ts_str[:19], "%Y-%m-%dT%H:%M:%S"))
+                        except Exception:
+                            continue
+                        if ts < cutoff:
+                            continue
+                        hour_key = ts_str[:13]
+                        hourly[hour_key] += 1
+                        total += 1
+                        sc = parts[5].strip()
+                        if sc.isdigit():
+                            status_codes[sc] += 1
+                except Exception:
+                    pass
+                hours = []
+                for i in range(23, -1, -1):
+                    t = now - i * 3600
+                    key = time.strftime("%Y-%m-%dT%H", time.localtime(t))
+                    hours.append({"h": time.strftime("%H:00", time.localtime(t)), "n": hourly.get(key, 0)})
+                self._json({"hours": hours, "total": total, "statuses": dict(status_codes)})
+        elif p == "/portal/api/my-sessions":
+            s = self._need_auth(csrf=False)
+            if s:
+                rows = q("SELECT token_hash, created_at, expires_at FROM sessions WHERE user_id=? ORDER BY created_at DESC", (s["id"],))
+                sessions = []
+                now_ts = int(time.time())
+                for row in rows:
+                    sessions.append({
+                        "hash": row["token_hash"],
+                        "prefix": row["token_hash"][:16],
+                        "created": row["created_at"],
+                        "expires": row["expires_at"],
+                        "expired": row["expires_at"] < now_ts,
+                    })
+                self._json({"sessions": sessions})
+        elif p == "/portal/api/my-logins":
+            s = self._need_auth(csrf=False)
+            if s:
+                rows = q("SELECT ts, ip, result, detail FROM audit WHERE username=? AND action='login' ORDER BY id DESC LIMIT 20", (s["username"],))
+                logins = []
+                for row in rows:
+                    logins.append({"ts": row["ts"], "ip": row["ip"], "result": row["result"], "detail": row["detail"]})
+                self._json({"logins": logins})
         elif p == "/portal/api/opencode-config":
             s = self._need_auth(csrf=False)
             if s:
@@ -1996,6 +2522,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.api_key_rotate(body, s, ip)
         if p == "/portal/api/account/delete":
             return self.api_account_delete(body, s, ip)
+        if p == "/portal/api/session/revoke":
+            hash_val = str(body.get("hash", "")).strip()
+            if not hash_val:
+                self._json({"error": "missing hash"}, 400)
+                return
+            row = q("SELECT user_id FROM sessions WHERE token_hash=?", (hash_val,), one=True)
+            if not row or row["user_id"] != s["id"]:
+                self._json({"error": "invalid session"}, 403)
+                return
+            q("DELETE FROM sessions WHERE token_hash=?", (hash_val,))
+            audit(s["username"], "session_revoke", ip, "ok", f"revoked {hash_val[:16]}")
+            self._json({"ok": True})
 
         # --- superadmin ---
         if p in ("/portal/api/admin/users", "/portal/api/admin/role",

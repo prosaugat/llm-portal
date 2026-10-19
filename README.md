@@ -31,8 +31,16 @@ Running a local LLM server is easy. **Managing who can use it** is not.
 - **API key management** — reveal, rotate, disable/expire keys from the UI or CLI
 - **Logging reverse proxy** — per-user request attribution, access logs, error logs
 - **Usage analytics** — hourly API call charts, top users, status code distribution
+- **Personal usage dashboard** — each user sees their own 24h usage chart with OK/error breakdown
+- **Getting started checklist** — onboarding guide for new users until first API call
+- **Session management** — view active sessions, identify current device, revoke remotely
+- **Login history** — recent login attempts with IP and success/failure status
+- **Dark/light theme** — toggle in header, persists across sessions
+- **Command palette** — press `Ctrl+K` for quick navigation and actions
+- **Mobile friendly** — hamburger menu with slide-out drawer on small screens
 - **OpenCode integration** — one-click config generation for OpenCode IDE
 - **Responsive UI** — glassmorphism dark theme, works on mobile
+- **Skeleton loading** — pulsing placeholders while data loads
 - **Zero dependencies** — pure Python stdlib, no pip install required
 - **Systemd ready** — includes service units for production deployment
 - **Configurable branding** — your portal name, your colors, your domain
@@ -206,6 +214,10 @@ Portal endpoints (behind auth):
 | POST | `/portal/api/signup` | Register |
 | GET | `/portal/api/key` | Get own API key |
 | POST | `/portal/api/key/rotate` | Rotate own key |
+| GET | `/portal/api/my-usage` | Personal 24h usage stats |
+| GET | `/portal/api/my-sessions` | List active sessions |
+| POST | `/portal/api/session/revoke` | Revoke a session |
+| GET | `/portal/api/my-logins` | Login history |
 | GET | `/portal/api/opencode-config` | OpenCode config JSON |
 | GET | `/portal/api/admin/users` | List all users (admin) |
 | GET | `/portal/api/admin/analytics` | Usage analytics (admin) |

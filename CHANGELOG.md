@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [1.1.0] — 2026-10-19
+
+### Added
+- **Personal usage charts** — 24-hour hourly API call chart on dashboard with OK/error legend (SVG, auto-refresh 30s)
+- **Getting started checklist** — 4-step onboarding guide on dashboard (create account → reveal key → first API call → copy config) with progress counter
+- **Account page overhaul** — profile card with gradient avatar, usage summary (3-stat row + sparkline), active sessions list with revoke, login history with status dots
+- **Active sessions management** — view all sessions, identify current device, revoke individual sessions
+- **Login history** — recent 20 login attempts with IP, timestamp, and success/failure status
+- **Dark/light theme toggle** — moon/sun button in header, persists via localStorage, full light theme for all components
+- **Mobile hamburger menu** — slide-out navigation drawer on screens ≤640px with overlay backdrop
+- **Command palette** — press `Ctrl+K` anywhere for quick navigation (Dashboard, Account, Admin, key operations, sign out) with fuzzy search
+- **Skeleton loading states** — pulsing shimmer placeholders while data loads
+- **Login page polish** — show/hide password toggle, loading spinner during authentication, shake animation on failed attempts
+- **Password visibility toggle** — eye icon on password fields in account and login pages
+- **New API endpoints**: `GET /portal/api/my-usage`, `GET /portal/api/my-sessions`, `GET /portal/api/my-logins`, `POST /portal/api/session/revoke`
+
+### Changed
+- Dashboard restructured with two-column grid: Getting Started + Usage Chart alongside API Key + OpenCode Config
+- Account page expanded to 720px width with card-based layout
+- Responsive breakpoints updated for mobile hamburger menu
+
+### Fixed
+- `&quot;` entity in static HTML attributes replaced with literal `"` for correct DOM parsing
+
 ## [1.0.0] — 2026-10-19
 
 ### Added
