@@ -19,6 +19,7 @@ No third-party deps: pure Python asyncio + stdlib.
 """
 
 import asyncio
+import json
 import os
 import re
 import socket
@@ -57,6 +58,7 @@ DROP_HEADERS = {
 
 USER_MAP = {}
 USER_MAP_TTL = 0.0
+USER_MAP_MTIME = 0.0
 
 
 # ---------------------------------------------------------------- logging
@@ -106,15 +108,56 @@ def load_user_map():
     return m
 
 
-def resolve_user(auth_header):
-    global USER_MAP, USER_MAP_TTL
-    if time.time() > USER_MAP_TTL:
+def _refresh_user_map(force=False):
+    """Re-read key file if TTL expired or mtime changed (instant on file change)."""
+    global USER_MAP, USER_MAP_TTL, USER_MAP_MTIME
+    now = time.time()
+    try:
+        mtime = os.path.getmtime(KEY_FILE)
+    except OSError:
+        mtime = 0.0
+    mtime_changed = mtime != USER_MAP_MTIME
+    ttl_expired = now > USER_MAP_TTL
+    if force or mtime_changed or ttl_expired:
         USER_MAP = load_user_map()
-        USER_MAP_TTL = time.time() + 30
+        USER_MAP_MTIME = mtime
+        USER_MAP_TTL = now + 30
+        return True
+    return False
+
+
+def resolve_user(auth_header):
+    _refresh_user_map()
     if not auth_header or not auth_header.strip():
         return "anon"
     token = auth_header.strip().split()[-1]
     return USER_MAP.get(token, "unknown:" + token[:18] + "..")
+
+
+def check_auth(auth_header, path):
+    """Enforce auth for /v1/* requests when ENFORCE_AUTH is enabled.
+
+    Returns (ok, username).  When ok=False the caller should send 401.
+    Instantly picks up new keys via mtime check in _refresh_user_map().
+    """
+    if not ENFORCE_AUTH:
+        return True, resolve_user(auth_header)
+    # exempt paths: health checks + portal (own session auth) + web UI
+    if path == "/health" or path.startswith("/portal") or not path.startswith("/v1/"):
+        return True, resolve_user(auth_header)
+    if not auth_header or not auth_header.strip():
+        return False, "anon"
+    token = auth_header.strip().split()[-1]
+    _refresh_user_map()
+    username = USER_MAP.get(token)
+    if username:
+        return True, username
+    # unknown key — force one more read in case file just changed
+    _refresh_user_map(force=True)
+    username = USER_MAP.get(token)
+    if username:
+        return True, username
+    return False, "unknown:" + token[:18] + ".."
 
 
 # ---------------------------------------------------------------- relay
@@ -194,9 +237,21 @@ async def handle_client(client_r, client_w):
             k, _, v = l.decode("latin1").partition(":")
             headers[k.strip().lower()] = v.strip()
         auth = headers.get("authorization", "")
-        user = resolve_user(auth)
         ua = headers.get("user-agent", "")
         is_portal = path == "/portal" or path.startswith("/portal/")
+        # --- auth enforcement for /v1/* (instant key pickup, no restart) ---
+        auth_ok, user = check_auth(auth, path)
+        if not auth_ok:
+            status = 401
+            req_type = "api"
+            dur_ms = int((time.time() - t0) * 1000)
+            log_access(user, f"{method} {path}", 401, 0, dur_ms, ua, ip, "api")
+            log_error(user, f"{method} {path}", "invalid or missing API key", 401)
+            err = json.dumps({"error": {"message": "Invalid or missing API key",
+                                        "type": "invalid_request_error",
+                                        "code": "invalid_api_key"}}).encode()
+            await _reply(client_w, 401, err, content_type="application/json")
+            return
         if is_portal:
             req_type, target = "portal", PORTAL_UP
         elif path == "/health":
@@ -314,11 +369,11 @@ async def handle_client(client_r, client_w):
             pass
 
 
-async def _reply(writer, code, body):
-    reason = {200: "OK", 400: "Bad Request", 502: "Bad Gateway",
-              504: "Gateway Timeout"}.get(code, "Error")
+async def _reply(writer, code, body, content_type="text/plain"):
+    reason = {200: "OK", 400: "Bad Request", 401: "Unauthorized",
+              502: "Bad Gateway", 504: "Gateway Timeout"}.get(code, "Error")
     writer.write(f"HTTP/1.1 {code} {reason}\r\nContent-Length: {len(body)}\r\n"
-                 f"Connection: close\r\nContent-Type: text/plain\r\n\r\n".encode("latin1") + body)
+                 f"Connection: close\r\nContent-Type: {content_type}\r\n\r\n".encode("latin1") + body)
     await writer.drain()
 
 

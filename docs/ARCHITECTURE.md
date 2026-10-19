@@ -36,7 +36,7 @@ A bash script for managing users and API keys from the command line:
 - Creates/removes users and their API keys
 - Rotates keys (old key immediately invalidated)
 - Disables/enables access without deleting keys
-- Triggers backend restart when keys change (if configured)
+- Keys hot-reload in the proxy instantly — no backend restart needed (with `enforce_auth = true`)
 
 ## Data flow
 

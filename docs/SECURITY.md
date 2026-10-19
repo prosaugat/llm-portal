@@ -105,9 +105,9 @@ Created ──▶ Active ──▶ Rotated (old key revoked)
 ### Key rotation
 
 - Rotating generates a new random key and **immediately invalidates** the old one
-- The proxy re-reads the key file every 30 seconds
-- For llama.cpp: the server also needs to re-read (or restart) — handled automatically by `userctl.sh`
-- For Ollama: no restart needed (proxy enforces keys)
+- The proxy re-reads the key file **instantly** when it changes (mtime detection)
+- With `proxy.enforce_auth = true` (default): **no backend restart needed** — new keys work within milliseconds
+- For llama.cpp with backend auth (`enforce_auth = false`): `userctl.sh` handles the restart
 
 ### Key revocation vs deletion
 

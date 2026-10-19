@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [1.1.0] — 2026-10-19
 
 ### Added
+- **Zero-restart user provisioning** — proxy-enforced auth (`proxy.enforce_auth = true`): new API keys work instantly without restarting the backend. The proxy detects key file changes via mtime and reloads within milliseconds.
 - **Personal usage charts** — 24-hour hourly API call chart on dashboard with OK/error legend (SVG, auto-refresh 30s)
 - **Getting started checklist** — 4-step onboarding guide on dashboard (create account → reveal key → first API call → copy config) with progress counter
 - **Account page overhaul** — profile card with gradient avatar, usage summary (3-stat row + sparkline), active sessions list with revoke, login history with status dots
@@ -21,6 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - **New API endpoints**: `GET /portal/api/my-usage`, `GET /portal/api/my-sessions`, `GET /portal/api/my-logins`, `POST /portal/api/session/revoke`
 
 ### Changed
+- `userctl.sh` no longer restarts the backend on key changes — keys are hot-reloaded by the proxy (when `enforce_auth = true`)
 - Dashboard restructured with two-column grid: Getting Started + Usage Chart alongside API Key + OpenCode Config
 - Account page expanded to 720px width with card-based layout
 - Responsive breakpoints updated for mobile hamburger menu

@@ -44,7 +44,7 @@ DEFAULTS: dict[str, Any] = {
         "enabled": True,
         "host": "0.0.0.0",
         "port": 8080,
-        "enforce_auth": False,
+        "enforce_auth": True,
     },
     "paths": {
         "data_dir": "./data",

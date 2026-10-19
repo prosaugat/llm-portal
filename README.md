@@ -27,6 +27,7 @@ Running a local LLM server is easy. **Managing who can use it** is not.
 ## Features
 
 - **Web signup & login** — users self-register and get their own API key
+- **Zero-restart provisioning** — new API keys work instantly, no backend restart (proxy-enforced auth)
 - **Admin console** — manage users, roles, keys, and view analytics with charts
 - **API key management** — reveal, rotate, disable/expire keys from the UI or CLI
 - **Logging reverse proxy** — per-user request attribution, access logs, error logs

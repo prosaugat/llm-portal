@@ -13,10 +13,14 @@
 # Configuration (env vars, with defaults):
 #   KEY_FILE    path to API keys file    (default: ./data/api_keys.txt)
 #   USERS_MD    path to users markdown   (default: ./data/users.md)
-#   SVC         systemd service to restart on key change (default: llm-backend)
+#   SVC         systemd service (unused if proxy.enforce_auth=true)
 #   PORT        health-check port        (default: 8080)
 #   LOGEVENT    event logging script     (default: ./log-event.sh)
-#   WAIT_HEALTHY=1  wait for backend health after restart (default: 1)
+#   WAIT_HEALTHY=1  verify backend health after key change (default: 1)
+#
+# NOTE: With proxy.enforce_auth = true in config.toml, the proxy enforces
+#   keys and re-reads the key file instantly on change — NO backend restart
+#   is needed. Keys added here work within milliseconds.
 #
 # Examples:
 #   ./userctl.sh add carol
@@ -42,12 +46,15 @@ validate_name() {
 }
 
 wait_healthy() {
-  systemctl restart "$SVC"
-  for _ in $(seq 1 45); do
-    sleep 2
-    curl -sf -m 2 "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1 && { echo "server restarted, healthy"; return 0; }
-  done
-  echo "warning: server not healthy yet — check: journalctl -u $SVC -n 30" >&2
+  # No backend restart needed when proxy.enforce_auth is enabled:
+  # the proxy re-reads the key file instantly via mtime change detection.
+  if [[ "${WAIT_HEALTHY:-1}" == "1" ]]; then
+    sleep 0.3
+    curl -sf -m 2 "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1 && { echo "key provisioned (no restart needed)"; return 0; }
+    echo "warning: backend not healthy — check: systemctl status $SVC" >&2
+  else
+    echo "key provisioned"
+  fi
 }
 
 # regenerates auth/users.md from the key file (single source of truth)

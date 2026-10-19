@@ -49,9 +49,11 @@ enabled = true
 host = "0.0.0.0"
 port = 8080
 # Enforce API-key auth at the proxy level.
-#   true  — reject requests without a valid key (use for ollama/openai backends)
-#   false — let the backend handle auth (use for llamacpp with AUTH=on)
-enforce_auth = false
+#   true  — proxy validates keys; NEW KEYS WORK INSTANTLY (no backend restart).
+#           Recommended for all backends. The proxy re-reads the key file
+#           the moment it changes (mtime detection).
+#   false — let the backend handle auth (requires backend restart on key change)
+enforce_auth = true
 
 [paths]
 # Base directory for data, logs, and keys (relative paths resolve from here)
